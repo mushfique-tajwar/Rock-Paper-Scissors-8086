@@ -9,9 +9,9 @@ endm
     prompt_player1 db "Player 1, choose Rock (1), Paper (2), or Scissors (3): $"
     prompt_player2 db "Player 2, choose Rock (1), Paper (2), or Scissors (3): $"
     invalid_input db "Invalid input! Please press 1, 2, or 3.$"
-    result_lose db "Player 1 wins!$"
-    result_win db "Player 2 wins!$"
-    result_tie db "It's a tie!$"
+    p1_win db "Player 1 wins!$"
+    p2_win db "Player 2 wins!$"
+    12_tie db "It's a tie!$"
     new_game_prompt db "Play again? (Y/N): $"
     player1_choice_msg db "Player 1 chose: $"
     player2_choice_msg db "Player 2 chose: $"
@@ -22,7 +22,7 @@ endm
 proc main
     mov ax, @data
     mov ds, ax
-game_loop:
+pvp:
     call new_line
     string_print prompt_player1
 get_player1_input:
@@ -35,7 +35,6 @@ get_player1_input:
     je valid_input_player1
     cmp al, 3
     je valid_input_player1
-    ; Invalid input
     call new_line
     string_print invalid_input
     call new_line
@@ -55,7 +54,6 @@ get_player2_input:
     je valid_input_player2
     cmp al, 3
     je valid_input_player2
-    ; Invalid input
     call new_line
     string_print invalid_input
     call new_line
@@ -71,56 +69,48 @@ valid_input_player2:
     string_print player2_choice_msg
     mov al, ch
     call print_choice
-    ; Game logic
-    cmp ch, dl
-    je tie
-    cmp ch, 1     
-    je rock_case
-    cmp ch, 2    
-    je paper_case
-    cmp ch, 3      
-    je scissors_case
-rock_case:
-    cmp cl, 1      
-    je tie
-    cmp cl, 2     
-    je lose
-    jmp win
-paper_case:
-    cmp cl, 1     
-    je win
-    cmp cl, 2   
-    je tie
-    jmp lose
-scissors_case:
-    cmp cl, 1    
-    je lose
-    cmp cl, 2    
-    je win
-    jmp tie
-tie:
+    cmp cl, ch
+    je pvp_tie
+    cmp cl, 1
+    je player1_rock
+    cmp cl, 2
+    je player1_paper
+    cmp cl, 3
+    je player1_scissors
+player1_rock:
+    cmp ch, 2
+    je pvp_lose
+    jmp pvp_win
+player1_paper:
+    cmp ch, 3
+    je pvp_lose
+    jmp pvp_win
+player1_scissors:
+    cmp ch, 1
+    je pvp_lose
+    jmp pvp_win
+pvp_tie:
     call new_line
-    string_print result_tie
-    jmp new_game
-lose:
+    string_print 12_tie
+    jmp pvp_new_game
+pvp_lose:
     call new_line
-    string_print result_lose
-    jmp new_game
-win:
+    string_print p2_win
+    jmp pvp_new_game
+pvp_win:
     call new_line
-    string_print result_win
-    jmp new_game
-new_game:
+    string_print p1_win
+    jmp pvp_new_game
+pvp_new_game:
     call new_line
     string_print new_game_prompt
     mov ah, 01h
     int 21h
-    cmp al, 'Y'      
-    je game_loop     
-    cmp al, 'y'      
-    je game_loop      
-    ; Exit
-    mov ax, 4C00h       
+    cmp al, 'Y'
+    je pvp
+    cmp al, 'y'
+    je pvp
+    mov ax, 4C00h
     int 21h
 
 proc new_line
@@ -131,7 +121,7 @@ proc new_line
     int 21h
     ret
 endp new_line
-print_choice proc
+proc print_choice
     cmp al, 1
     je print_rock
     cmp al, 2
